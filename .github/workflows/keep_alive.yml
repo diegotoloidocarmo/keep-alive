@@ -1,6 +1,6 @@
 name: Keep Alive
 
-  on:
+  "on":
     schedule:
       - cron: "0,30 * * * *"
     workflow_dispatch:

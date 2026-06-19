@@ -1,18 +1,48 @@
 name: Keep Alive
 
-  "on":
-    schedule:
-      - cron: "0,30 * * * *"
-    workflow_dispatch:
+on:
+  schedule:
+    - cron: "0,30 * * * *"
+  workflow_dispatch:
 
-  jobs:
-    wake:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Wake Streamlit App
-          run: |
-            pip install playwright
-            playwright install chromium --with-deps
-            python3 -c 'from playwright.sync_api import sync_playwright; p = sync_playwright().start(); b = p.chromium.launch(); pg = b.new_page();
-  pg.goto("https://simples-nacional.streamlit.app", timeout=60000); btn = pg.query_selector("text=Yes, get this app back up!"); btn.click() if btn
-  else None; pg.wait_for_timeout(20000) if btn else None; print("Acordado!" if btn else "Ja estava no ar."); b.close(); p.stop()'
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Instalar Playwright
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Wake Streamlit App
+        run: |
+          python3 << 'EOF'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+
+              page.goto(
+                  "https://simples-nacional.streamlit.app",
+                  timeout=60000
+              )
+
+              try:
+                  botao = page.query_selector(
+                      "text=Yes, get this app back up!"
+                  )
+
+                  if botao:
+                      botao.click()
+                      page.wait_for_timeout(20000)
+                      print("Acordado!")
+                  else:
+                      print("Já estava no ar.")
+
+              except Exception as e:
+                  print(f"Erro: {e}")
+
+              browser.close()
+          EOF
